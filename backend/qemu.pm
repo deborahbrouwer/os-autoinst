@@ -745,7 +745,9 @@ sub start_qemu ($self) {
         # use consistent port. port 1 is slirpvde so add + 2.
         # *2 to have another slot for slirpvde. Default number
         # of ports is 32 so enough for 14 workers per host.
-        $vars->{VDE_PORT} ||= ($vars->{WORKER_ID} // 0) * 2 + 2;
+        if ($vars->{VDE_PORT} ne "0") {
+            $vars->{VDE_PORT} ||= ($vars->{WORKER_ID} // 0) * 2 + 2;
+        }
     }
     $self->_set_graphics_backend;
 
@@ -807,8 +809,10 @@ sub start_qemu ($self) {
         my $port = $vars->{VDE_PORT};
         my $vlan = $nicvlan[0];
         # XXX: no useful return value from those commands
-        runcmd('vdecmd', '-s', $mgmtsocket, 'port/remove', $port);
-        runcmd('vdecmd', '-s', $mgmtsocket, 'port/create', $port);
+        if ($vars->{VDE_PORT} ne "0") {
+            runcmd('vdecmd', '-s', $mgmtsocket, 'port/remove', $port);
+            runcmd('vdecmd', '-s', $mgmtsocket, 'port/create', $port);
+        }
         if ($vlan) {
             runcmd('vdecmd', '-s', $mgmtsocket, 'vlan/create', $vlan);
             runcmd('vdecmd', '-s', $mgmtsocket, 'port/setvlan', $port, $vlan);
